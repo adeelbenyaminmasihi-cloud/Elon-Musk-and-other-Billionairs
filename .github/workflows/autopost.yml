@@ -1,0 +1,65 @@
+name: Billionaire Pinterest Auto-Poster
+
+on:
+  schedule:
+    - cron: '0 */2 * * *' # Har 2 ghante baad automatically chalega
+  workflow_dispatch:      # Manual button se test karne ke liye
+
+permissions:
+  contents: write         # Image ko repo mein save karne ki permission
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate Quote & Pin Image
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: python main.py
+
+      - name: Commit & Push Image to GitHub
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add latest_pin.png
+          git commit -m "Auto-update latest Pinterest graphic" || echo "No changes to commit"
+          git push
+
+      - name: Send Data to Make.com Webhook
+        env:
+          MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
+          BRIDGE_PAGE_URL: ${{ secrets.BRIDGE_PAGE_URL }}
+          REPO_FULL_NAME: ${{ github.repository }}
+        run: |
+          python -c '
+          import os, json, time, requests
+          with open("payload.json") as f:
+              data = json.load(f)
+          repo = os.environ["REPO_FULL_NAME"]
+          ts = int(time.time())
+          # Cache-busting URL taake Pinterest har baar nayi image uthaye
+          image_url = f"https://raw.githubusercontent.com/{repo}/main/latest_pin.png?v={ts}"
+          
+          payload = {
+              "title": data["pin_title"],
+              "description": data["pin_description"],
+              "image_url": image_url,
+              "destination_link": os.environ["BRIDGE_PAGE_URL"],
+              "billionaire": data["billionaire"]
+          }
+          r = requests.post(os.environ["MAKE_WEBHOOK_URL"], json=payload)
+          print("Make Webhook Status:", r.status_code, r.text)
+          '
