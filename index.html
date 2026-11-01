@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Future Tech & Billionaire Insights</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0f;
+            color: #ffffff;
+            font-family: 'Segoe UI', Roboto, Helvetica, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            text-align: center;
+        }
+        .card {
+            background: #14141f;
+            padding: 40px 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 255, 200, 0.1);
+            max-width: 450px;
+            width: 90%;
+            border: 1px solid #2a2a40;
+        }
+        .badge {
+            background: rgba(0, 210, 255, 0.15);
+            color: #00d2ff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        h1 {
+            font-size: 24px;
+            margin: 20px 0 10px;
+            line-height: 1.4;
+        }
+        p {
+            color: #a0a0b8;
+            font-size: 15px;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+            color: #fff;
+            text-decoration: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 16px;
+            width: 85%;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.03);
+        }
+        .timer {
+            margin-top: 15px;
+            font-size: 13px;
+            color: #6c6c80;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <span class="badge">Exclusive Report</span>
+        <h1>Billionaire Predictions & The 2030 Tech Blueprint</h1>
+        <p>You are being redirected to the full interview analysis and future insights report...</p>
+        <a id="directLink" href="#" class="btn">Read Full Prediction Now →</a>
+        <div class="timer">Redirecting automatically in <span id="count">3</span> seconds...</div>
+    </div>
+
+    <script>
+        // YAHAN APNA ADSTERRA SMARTLINK PASTE KAREIN:
+        const ADSTERRA_URL = "PASTE_YOUR_ADSTERRA_DIRECT_LINK_HERE";
+        
+        document.getElementById("directLink").href = ADSTERRA_URL;
+
+        let timeLeft = 3;
+        const countEl = document.getElementById("count");
+        const interval = setInterval(() => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                clearInterval(interval);
+                window.location.href = ADSTERRA_URL;
+            } else {
+                countEl.textContent = timeLeft;
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
