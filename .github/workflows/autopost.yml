@@ -2,7 +2,7 @@ name: Billionaire Pinterest Auto-Poster
 
 on:
   schedule:
-    - cron: '15 */2 * * *'  # Har 2 ghante 15 minute baad chalega
+    - cron: '20 */2 * * *'  # Din mein lagbhag 10 bar chalega
   workflow_dispatch:
 
 permissions:
@@ -24,18 +24,18 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Generate Batch Pins
+      - name: Generate 2 Fresh Pins
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: python main.py
 
-      - name: Commit & Push Batch Images
+      - name: Commit & Push Pins to GitHub
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add pin_*.png
-          git commit -m "Auto-update latest batch pins" || echo "No changes to commit"
+          git commit -m "Auto-post fresh billionaire pins" || echo "No changes to commit"
           git push
 
       - name: Send Batch Data to Make.com Webhook
@@ -54,7 +54,7 @@ jobs:
           
           for idx, item in enumerate(batch):
               ts = int(time.time())
-              # Har image ka distinct URL commit push hone ke baad
+              # Image ka public URL
               image_url = f"https://raw.githubusercontent.com/{repo}/main/{item[\"local_file\"]}?v={ts}"
               payload = {
                   "title": item["pin_title"],
@@ -64,7 +64,6 @@ jobs:
                   "billionaire": item["billionaire"]
               }
               r = requests.post(webhook, json=payload)
-              print(f"Sent item {idx+1}: Status {r.status_code}")
-              # Make.com aur Pinterest spam filter se bachne ke liye 20 second delay
-              time.sleep(20)
+              print(f"Sent pin {idx+1} ({item[\"billionaire\"]}) - Status: {r.status_code}")
+              time.sleep(25) # Pinterest rate-limit safety pause
           '
