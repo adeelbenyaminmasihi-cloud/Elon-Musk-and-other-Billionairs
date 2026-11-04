@@ -2,11 +2,11 @@ name: Billionaire Pinterest Auto-Poster
 
 on:
   schedule:
-    - cron: '0 */2 * * *' # Har 2 ghante baad automatically chalega
-  workflow_dispatch:      # Manual button se test karne ke liye
+    - cron: '15 */2 * * *'  # Har 2 ghante 15 minute baad chalega
+  workflow_dispatch:
 
 permissions:
-  contents: write         # Image ko repo mein save karne ki permission
+  contents: write
 
 jobs:
   generate-and-publish:
@@ -24,21 +24,21 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Generate Quote & Pin Image
+      - name: Generate Batch Pins
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: python main.py
 
-      - name: Commit & Push Image to GitHub
+      - name: Commit & Push Batch Images
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add latest_pin.png
-          git commit -m "Auto-update latest Pinterest graphic" || echo "No changes to commit"
+          git add pin_*.png
+          git commit -m "Auto-update latest batch pins" || echo "No changes to commit"
           git push
 
-      - name: Send Data to Make.com Webhook
+      - name: Send Batch Data to Make.com Webhook
         env:
           MAKE_WEBHOOK_URL: ${{ secrets.MAKE_WEBHOOK_URL }}
           BRIDGE_PAGE_URL: ${{ secrets.BRIDGE_PAGE_URL }}
@@ -46,20 +46,25 @@ jobs:
         run: |
           python -c '
           import os, json, time, requests
-          with open("payload.json") as f:
-              data = json.load(f)
+          with open("batch_payload.json") as f:
+              batch = json.load(f)
           repo = os.environ["REPO_FULL_NAME"]
-          ts = int(time.time())
-          # Cache-busting URL taake Pinterest har baar nayi image uthaye
-          image_url = f"https://raw.githubusercontent.com/{repo}/main/latest_pin.png?v={ts}"
+          webhook = os.environ["MAKE_WEBHOOK_URL"]
+          bridge = os.environ["BRIDGE_PAGE_URL"]
           
-          payload = {
-              "title": data["pin_title"],
-              "description": data["pin_description"],
-              "image_url": image_url,
-              "destination_link": os.environ["BRIDGE_PAGE_URL"],
-              "billionaire": data["billionaire"]
-          }
-          r = requests.post(os.environ["MAKE_WEBHOOK_URL"], json=payload)
-          print("Make Webhook Status:", r.status_code, r.text)
+          for idx, item in enumerate(batch):
+              ts = int(time.time())
+              # Har image ka distinct URL commit push hone ke baad
+              image_url = f"https://raw.githubusercontent.com/{repo}/main/{item[\"local_file\"]}?v={ts}"
+              payload = {
+                  "title": item["pin_title"],
+                  "description": item["pin_description"],
+                  "image_url": image_url,
+                  "destination_link": bridge,
+                  "billionaire": item["billionaire"]
+              }
+              r = requests.post(webhook, json=payload)
+              print(f"Sent item {idx+1}: Status {r.status_code}")
+              # Make.com aur Pinterest spam filter se bachne ke liye 20 second delay
+              time.sleep(20)
           '
