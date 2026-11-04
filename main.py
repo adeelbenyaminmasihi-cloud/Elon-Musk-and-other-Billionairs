@@ -10,66 +10,86 @@ from google import genai
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY")
-MAKE_WEBHOOK_URL = os.environ.get("MAKE_WEBHOOK_URL")
-BRIDGE_PAGE_URL = os.environ.get("BRIDGE_PAGE_URL")
-REPO_FULL_NAME = os.environ.get("REPO_FULL_NAME", "")
 
 BILLIONAIRES = [
     "Elon Musk", "Sam Altman", "Jensen Huang", "Jeff Bezos", 
     "Bill Gates", "Mark Zuckerberg", "Peter Thiel", "Larry Ellison",
-    "Ray Kurzweil", "Naval Ravikant"
+    "Warren Buffett", "Sundar Pichai", "Satya Nadella", "Ray Kurzweil"
 ]
 
 TOPICS = [
-    "Humanoid Robots replacing workers",
-    "Brain chips & Neuralink super-intelligence",
-    "The collapse of conventional college degrees",
-    "AI taking white-collar jobs by 2028",
-    "Mars colonization and space economy",
-    "Longevity tech & living to 150 years",
-    "The end of smartphones and rise of smart glasses",
-    "Cryptocurrency & decentralized future economy"
+    "Humanoid AI Robots taking physical jobs",
+    "Brain computer chips and digital immortality",
+    "Why traditional degrees and schooling will collapse",
+    "Artificial General Intelligence arriving before 2029",
+    "Mars colony, space mining and next trillionaires",
+    "Longevity biotechnology to live past 130 years",
+    "Smart AI glasses replacing mobile phones completely",
+    "The complete restructuring of the global financial system",
+    "Autonomous humanoid labor building future mega-cities"
 ]
 
 COLOR_THEMES = [
     {"accent": (0, 229, 255), "author": (255, 214, 0)},     # Cyan & Gold
     {"accent": (255, 0, 128), "author": (0, 255, 200)},     # Neon Pink & Mint
     {"accent": (0, 255, 136), "author": (255, 255, 255)},   # Neon Green & White
-    {"accent": (255, 106, 0), "author": (255, 214, 0)},     # Fiery Orange & Yellow
-    {"accent": (168, 85, 247), "author": (56, 189, 248)}    # Purple & Sky Blue
+    {"accent": (255, 106, 0), "author": (255, 214, 0)},     # Orange & Yellow
+    {"accent": (168, 85, 247), "author": (56, 189, 248)}    # Purple & Cyan
 ]
 
+TAGS = ["FUTURE PREDICTION", "TECH INSIGHT 2030", "BILLIONAIRE WARNING", "CONFIDENTIAL BRIEF"]
+
+def get_fallback_data(chosen_person, chosen_topic):
+    fallbacks = {
+        "Jensen Huang": ("EVERY WORKFORCE WILL BE REPLACED BY DIGITAL AI AGENTS.", "Jensen Huang's Warning on the Future of Jobs"),
+        "Sam Altman": ("AGI WILL SOLVE THE LAWS OF PHYSICS BEFORE 2030.", "Sam Altman Predicts AGI Breakthrough"),
+        "Jeff Bezos": ("TRILLIONS OF HUMANS WILL LIVE IN ORBITING SPACE COLONIES.", "Jeff Bezos Outlines Future Space Civilization"),
+        "Bill Gates": ("GLOBAL HEALTH AND AI WILL REDEFINE HUMAN WEALTH.", "Bill Gates Predicts The Next Global Shift"),
+        "Mark Zuckerberg": ("THE PHYSICAL WORLD AND DIGITAL METAVERSE WILL MERGE.", "Mark Zuckerberg on the Next Computing Platform"),
+        "Peter Thiel": ("COMPETITION IS FOR LOSERS; BUILD A FUTURE MONOPOLY.", "Peter Thiel's Bold Business Blueprint"),
+        "Elon Musk": ("BY 2030, OPTIMUS ROBOTS WILL OUTNUMBER THE HUMAN POPULATION.", "Elon Musk Predicts Robotics Takeover")
+    }
+    quote, title = fallbacks.get(chosen_person, ("THE FUTURE BELONGS TO THOSE WHO OWN THE ALGORITHMS.", f"{chosen_person}'s Shocking Future Prediction"))
+    return {
+        "billionaire": chosen_person,
+        "quote_text": quote,
+        "pin_title": title,
+        "pin_description": f"{chosen_person} reveals his perspective on {chosen_topic}. Read the full analysis. #Billionaire #FutureTech #AI #Wealth #Innovation",
+        "search_tag": "technology dark"
+    }
+
 def generate_billionaire_content():
-    client = genai.Client(api_key=GEMINI_API_KEY)
     chosen_person = random.choice(BILLIONAIRES)
     chosen_topic = random.choice(TOPICS)
     
     prompt = f"""
-    Write a bold, provocative, and highly viral prediction by {chosen_person} about: "{chosen_topic}".
-    Ensure it is totally fresh, non-cliche, dramatic, and sounds like real tech insider news.
-    
-    Return strictly JSON with NO formatting backticks:
+    Write a provocative, completely unique future prediction by {chosen_person} regarding: "{chosen_topic}".
+    Return STRICTLY JSON format with no markdown blocks:
     {{
       "billionaire": "{chosen_person}",
-      "quote_text": "Shocking, punchy prediction in ALL CAPS (10 to 16 words max)",
-      "pin_title": "High CTR clickbait title (under 75 chars)",
-      "pin_description": "SEO Pinterest description ending with 6 popular hashtags",
-      "search_tag": "A single English keyword for image search like cyber, space, server, brain, robot, finance"
+      "quote_text": "Dramatic prediction in ALL CAPS (10 to 15 words max)",
+      "pin_title": "High CTR clickbait title (under 75 characters)",
+      "pin_description": "Engaging Pinterest description with 5 trending hashtags",
+      "search_tag": "Single search keyword like robot, space, cyber, brain, neon, tech"
     }}
     """
     try:
+        client = genai.Client(api_key=GEMINI_API_KEY)
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             contents=prompt
         )
-        clean_text = response.text.strip().replace("```json", "").replace("```", "").strip()
-        return json.loads(clean_text)
+        clean = response.text.strip().replace("```json", "").replace("```", "").strip()
+        data = json.loads(clean)
+        if not data.get("quote_text") or not data.get("billionaire"):
+            return get_fallback_data(chosen_person, chosen_topic)
+        return data
     except Exception as e:
-        print(f"Gemini generation error: {e}")
-        return None
+        print(f"Gemini API fallback triggered: {e}")
+        return get_fallback_data(chosen_person, chosen_topic)
 
-def fetch_background_image(search_tag="futuristic"):
-    queries = [search_tag, "futuristic dark", "cyberpunk technology", "deep space galaxy", "neon artificial intelligence"]
+def fetch_background_image(search_tag="technology"):
+    queries = [search_tag, "cyberpunk", "futuristic tech", "dark galaxy space", "artificial intelligence neon"]
     q = random.choice(queries)
     url = f"https://pixabay.com/api/?key={PIXABAY_API_KEY}&q={q}&image_type=photo&orientation=vertical&per_page=30"
     
@@ -83,21 +103,19 @@ def fetch_background_image(search_tag="futuristic"):
     except Exception as e:
         print(f"Pixabay fetch error: {e}")
         
-    return Image.new("RGB", (1000, 1500), color=(12, 14, 22))
+    return Image.new("RGB", (1000, 1500), color=(14, 16, 26))
 
-def create_pin_image(data, filename="pin_temp.png"):
+def create_pin_image(data, filename):
     tag = data.get("search_tag", "technology")
     bg = fetch_background_image(tag)
     bg = bg.resize((1000, 1500), Image.Resampling.LANCZOS)
     
-    # Random brightness so backgrounds look distinct
-    brightness = random.uniform(0.25, 0.35)
-    bg = ImageEnhance.Brightness(bg).enhance(brightness)
-    
+    # Har pin ke liye distinct brightness
+    bg = ImageEnhance.Brightness(bg).enhance(random.uniform(0.24, 0.34))
     draw = ImageDraw.Draw(bg)
     theme = random.choice(COLOR_THEMES)
     
-    # Dynamic Border Box
+    # Border
     draw.rectangle([45, 45, 955, 1455], outline=theme["accent"], width=3)
     
     font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
@@ -109,9 +127,8 @@ def create_pin_image(data, filename="pin_temp.png"):
     except:
         tag_font = quote_font = author_font = cta_font = ImageFont.load_default()
 
-    # Top Tag
-    category_tags = ["2030 PREDICTION", "FUTURE TECH BRIEF", "BILLIONAIRE WARNING", "CONFIDENTIAL INSIGHT"]
-    draw.text((500, 150), random.choice(category_tags), fill=theme["accent"], font=tag_font, anchor="mm")
+    # Header Tag
+    draw.text((500, 150), random.choice(TAGS), fill=theme["accent"], font=tag_font, anchor="mm")
     
     # Wrapped Quote
     lines = textwrap.wrap(f'"{data["quote_text"]}"', width=20)
@@ -120,31 +137,34 @@ def create_pin_image(data, filename="pin_temp.png"):
         draw.text((500, y_text), line, fill=(255, 255, 255), font=quote_font, anchor="mm")
         y_text += 78
         
-    # Author
+    # Author Name
     draw.text((500, y_text + 65), f"— {data['billionaire'].upper()}", fill=theme["author"], font=author_font, anchor="mm")
     
-    # CTA Button
-    btn_color = theme["accent"]
-    draw.rounded_rectangle([200, 1270, 800, 1365], radius=22, fill=btn_color)
+    # Bottom CTA
+    draw.rounded_rectangle([200, 1270, 800, 1365], radius=22, fill=theme["accent"])
     draw.text((500, 1317), "READ FULL REPORT  ➔", fill=(10, 10, 15), font=cta_font, anchor="mm")
     
     bg.save(filename, "PNG", optimize=True)
 
 if __name__ == "__main__":
-    # Har run par 5 unique posts banayega
-    BATCH_COUNT = 5
-    generated_items = []
+    # Har run mein 2 distinct posts banengi
+    BATCH_COUNT = 2
+    batch = []
     
+    used_billionaires = set()
     for i in range(BATCH_COUNT):
-        print(f"Generating post {i+1} of {BATCH_COUNT}...")
         item = generate_billionaire_content()
-        if item:
-            filename = f"pin_{i}.png"
-            create_pin_image(item, filename)
-            item["local_file"] = filename
-            generated_items.append(item)
+        # Same run mein do same billionaires na hon
+        while item["billionaire"] in used_billionaires:
+            item = generate_billionaire_content()
+        used_billionaires.add(item["billionaire"])
+        
+        filename = f"pin_{i}.png"
+        create_pin_image(item, filename)
+        item["local_file"] = filename
+        batch.append(item)
         time.sleep(2)
         
     with open("batch_payload.json", "w") as f:
-        json.dump(generated_items, f)
-    print("Batch generation complete!")
+        json.dump(batch, f)
+    print("Batch created successfully!")
